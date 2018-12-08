@@ -1,19 +1,21 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <Adafruit_NeoPixel.h>
+#include "pic.h"
+
 #ifdef __AVR__
   #include <avr/power.h>
 #endif
 
-// round leds
+// круг из диодов
 #define ROUND_PIN     1
 #define NUM_PIXELS    24
 
-// tag
+// RFID метка
 #define SS_PIN        10
 #define RST_PIN       9
 
-// 8x8 pixelboard
+// 8x8 диоды
 #define MAX7219_CLK   4
 #define MAX7219_CS    5
 #define MAX7219_DIN   6
@@ -21,30 +23,10 @@
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, ROUND_PIN, NEO_GRB + NEO_KHZ800);
 unsigned long uidDec, uidDecTemp;  // для храниения номера метки в десятичном формате
-unsigned char heart[33][8] = { 
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-  0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 
-  0x00, 0x00, 0x00, 0x40, 0x40, 0x00, 0x00, 0x00, 
-  0x00, 0x00, 0x80, 0x40, 0x40, 0x00, 0x00, 0x00, 
-  0x00, 0x80, 0x80, 0x40, 0x40, 0x00, 0x00, 0x00, 
-  0x40, 0x80, 0x80, 0x40, 0x40, 0x00, 0x00, 0x00, 
-  0x60, 0x80, 0x80, 0x40, 0x40, 0x00, 0x00, 0x00, 
-  0x60, 0x90, 0x80, 0x40, 0x40, 0x00, 0x00, 0x00, 
-  0x60, 0x90, 0x88, 0x40, 0x40, 0x00, 0x00, 0x00, 
-  0x60, 0x90, 0x88, 0x44, 0x40, 0x00, 0x00, 0x00, 
-  0x60, 0x90, 0x88, 0x44, 0x44, 0x00, 0x00, 0x00, 
-  0x60, 0x90, 0x88, 0x44, 0x44, 0x08, 0x00, 0x00, 
-  0x60, 0x90, 0x88, 0x44, 0x44, 0x08, 0x10, 0x00, 
-  0x60, 0x90, 0x88, 0x44, 0x44, 0x08, 0x10, 0x20, 
-  0x60, 0x90, 0x88, 0x44, 0x44, 0x08, 0x10, 0x60, 
-  0x60, 0x90, 0x88, 0x44, 0x44, 0x08, 0x90, 0x60, 
-  0x60, 0x90, 0x88, 0x44, 0x44, 0x88, 0x90, 0x60 };
-unsigned char pine[8] = {0x40, 0x64, 0x56, 0xcd, 0xcd, 0x56, 0x64, 0x40};
-unsigned char yr19[8] = {0x7e, 0x89, 0x89, 0x46, 0x80, 0xff, 0x82, 0x04};
-unsigned char ball[8] = {0x38, 0x44, 0xb2, 0xa3, 0x83, 0x82, 0x44, 0x38};
 
 int touchesCount = 0;
 
+// 8x8 инициализация и запись
 void writeMaxByte(unsigned char DATA) {
   unsigned char i;
   digitalWrite(MAX7219_CS, LOW);
@@ -82,12 +64,14 @@ void setupPixels() {
   pixels.begin();  
 }
 
+// Нарисовать статичную картинку
 void drawStatic(unsigned char* p) {
   for (int i = 1; i <= 8; i++) {
     writeMax(i, p[i - 1]);
   }
 }
 
+// Нарисовать сердечко
 void drawHeart() {
   for (int j = 0; j < 17; j++) {
     for (int i = 0; i < 8; i++)
@@ -96,12 +80,14 @@ void drawHeart() {
   }
 }
 
+// Очистить поле
 void drawEmpty() {
   for (int i = 0; i < 8; i++)
     writeMax(i + 1, 0x00);
   delay(1000);
 }
 
+// Заполнить круг красным и зелёным
 void runPixels() {
     for (int i = 0; i < NUM_PIXELS; i++) {
       pixels.setPixelColor(i, 
@@ -115,6 +101,7 @@ void runPixels() {
     }
 }
 
+// Постепенно очистить круг
 void clearPixels() {
     for (int i = 0; i < NUM_PIXELS; i++) {
       delay(200);
@@ -123,6 +110,7 @@ void clearPixels() {
     }
 }
 
+// Общий сетап платы при старте
 void setup() {
   Serial.begin(9600);
   Serial.println("Waiting for card...");
@@ -134,6 +122,7 @@ void setup() {
   touchesCount = 0;
 }
 
+// Основной цикл
 void loop() {
   if (!mfrc522.PICC_IsNewCardPresent()) return;
   if (!mfrc522.PICC_ReadCardSerial()) return;
@@ -145,8 +134,9 @@ void loop() {
     uidDec = uidDec * 256 + uidDecTemp;
   }
   Serial.println("Card UID: ");
-  Serial.println(uidDec); // Выводим UID метки в консоль.
+  Serial.println(uidDec); // Выводим UID метки в консоль на всякий случай
 
+  // Если коснулись ключом от моего домофона)))
   if (uidDec == 2499689214) {
     switch (touchesCount) {
       case 0:
