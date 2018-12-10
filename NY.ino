@@ -7,13 +7,17 @@
   #include <avr/power.h>
 #endif
 
+#define LED_RED       3
+#define LED_GREEN     9
+#define BUZZER        7
+
 // круг из диодов
 #define ROUND_PIN     1
 #define NUM_PIXELS    24
 
 // RFID метка
 #define SS_PIN        10
-#define RST_PIN       9
+#define RST_PIN       8
 
 // 8x8 диоды
 #define MAX7219_CLK   4
@@ -25,6 +29,22 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, ROUND_PIN, NEO_GRB + NE
 unsigned long uidDec, uidDecTemp;  // для храниения номера метки в десятичном формате
 
 int touchesCount = 0;
+int tempo = 200;
+char notes[] = "eeeeeeegcde fffffeeeeddedg";
+int duration[] = {1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2};
+
+void playTheShit(char note, int duration) {
+  char notesName[] = { 'c', 'd', 'e', 'f', 'g' };
+  int tones[] = { 261, 293, 329, 349, 392 };
+
+  for (int i = 0; i < sizeof(tones); i++) {
+    // Bind the note took from the char array to the array notesName
+    if (note == notesName[i]) {
+      // Bind the notesName to tones
+      tone(BUZZER, tones[i], duration);
+    }
+  }
+}
 
 // 8x8 инициализация и запись
 void writeMaxByte(unsigned char DATA) {
@@ -71,20 +91,19 @@ void drawStatic(unsigned char* p) {
   }
 }
 
-// Нарисовать сердечко
-void drawHeart() {
-  for (int j = 0; j < 17; j++) {
+void drawDynamic(unsigned char p[][8], int steps) {
+  for (int j = 0; j < steps; j++) {
     for (int i = 0; i < 8; i++)
-      writeMax(i + 1, heart[j][i]);
+      writeMax(i + 1, p[j][i]);
     delay(100);
-  }
+  }  
 }
 
 // Очистить поле
 void drawEmpty() {
   for (int i = 0; i < 8; i++)
     writeMax(i + 1, 0x00);
-  delay(1000);
+  delay(300);
 }
 
 // Заполнить круг красным и зелёным
@@ -138,27 +157,61 @@ void loop() {
 
   // Если коснулись ключом от моего домофона)))
   if (uidDec == 2499689214) {
+    drawStatic(snow);
     switch (touchesCount) {
       case 0:
-        drawEmpty(); // обнуление доски
+        drawEmpty();
         drawStatic(ball);
+        runPixels();
+        analogWrite(LED_GREEN, 100);
         break;
       case 1:
-        drawEmpty(); // обнуление доски
+        drawEmpty();
         drawStatic(yr19);
+        clearPixels();
+        analogWrite(LED_RED, 0);
         break;
       case 2:
-        drawEmpty(); // обнуление доски
+        drawEmpty();
         drawStatic(pine);
+        runPixels();
+        analogWrite(LED_RED, 200);
+        break;
+      case 3:
+        drawEmpty();
+        drawDynamic(heart, 20);
+        analogWrite(LED_GREEN, 0);
+        clearPixels();
+        break;
+      case 4:
+        drawEmpty();
+        drawStatic(gb);
+        analogWrite(LED_RED, 200);
+        runPixels();
+        break;
+      case 5:
+        drawEmpty();
+        drawStatic(snow);
+        clearPixels();
+        analogWrite(LED_RED, 200);
         break;
       default:
+      // JINGLE BELLS
+        for (int i = 0; i < sizeof(notes)-1; i++) {
+          if (notes[i] == ' ') {
+            // If find a space it rests
+            delay(duration[i] * tempo);
+          } else {
+            playTheShit(notes[i], duration[i] * tempo);
+          }
+          // Pauses between notes
+          delay((tempo*2)*duration[i]);
+        }
+        analogWrite(LED_RED, 0);
+        analogWrite(LED_GREEN, 0);
+        drawEmpty();
         touchesCount = -1;
     }
     touchesCount++;
-//    runPixels();
-//    drawHeart();
-//    delay(3000);
-//    clearPixels();
-//    drawEmpty();
   }
 }
