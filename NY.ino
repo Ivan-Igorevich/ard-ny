@@ -29,7 +29,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, ROUND_PIN, NEO_GRB + NE
 unsigned long uidDec, uidDecTemp;  // для храниения номера метки в десятичном формате
 
 int touchesCount = 0;
-int tempo = 200;
+int tempo = 150;
 char notes[] = "eeeeeeegcde fffffeeeeddedg";
 int duration[] = {1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2};
 
